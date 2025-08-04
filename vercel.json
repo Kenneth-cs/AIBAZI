@@ -1,19 +1,36 @@
 {
   "version": 2,
-  "functions": {
-    "server.js": {
-      "runtime": "nodejs18.x"
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
     }
-  },
+  ],
   "routes": [
     {
-      "src": "/(.*\\.(css|js|png|jpg|jpeg|gif|ico|svg))",
+      "src": "/styles.css",
       "headers": {
-        "cache-control": "s-maxage=31536000"
-      }
+        "Content-Type": "text/css"
+      },
+      "dest": "/styles.css"
+    },
+    {
+      "src": "/script.js",
+      "headers": {
+        "Content-Type": "application/javascript"
+      },
+      "dest": "/script.js"
     },
     {
       "src": "/api/(.*)",
+      "dest": "/server.js"
+    },
+    {
+      "src": "/(.*\\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))",
+      "dest": "/$1"
+    },
+    {
+      "src": "/",
       "dest": "/server.js"
     },
     {
