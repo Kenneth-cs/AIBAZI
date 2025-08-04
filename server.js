@@ -3,7 +3,8 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
-const PORT = 3000;
+// 修改端口配置以适应Vercel
+const PORT = process.env.PORT || 3000;
 
 // 启用CORS
 app.use(cors());
@@ -218,7 +219,10 @@ app.post('/api/coze-workflow', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`服务器运行在 http://localhost:${PORT}`);
-    console.log(`主应用: http://localhost:${PORT}/index.html`);
-    console.log(`测试页面: http://localhost:${PORT}/test-proxy.html`);
+    console.log(`服务器运行在端口 ${PORT}`);
+    // 移除localhost相关的日志，因为在生产环境中不适用
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`主应用: http://localhost:${PORT}/index.html`);
+        console.log(`测试页面: http://localhost:${PORT}/test-proxy.html`);
+    }
 });
