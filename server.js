@@ -3,7 +3,6 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
-// 修改端口配置以适应Vercel
 const PORT = process.env.PORT || 3000;
 
 // 启用CORS
@@ -12,8 +11,29 @@ app.use(cors());
 // 解析JSON请求体
 app.use(express.json());
 
-// 提供静态文件
-app.use(express.static(__dirname));
+// 提供静态文件 - 设置正确的MIME类型
+app.use(express.static(__dirname, {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css');
+        }
+        if (path.endsWith('.js')) {
+            res.setHeader('Content-Type', 'application/javascript');
+        }
+    }
+}));
+
+// 专门处理CSS文件
+app.get('/styles.css', (req, res) => {
+    res.setHeader('Content-Type', 'text/css');
+    res.sendFile(path.join(__dirname, 'styles.css'));
+});
+
+// 专门处理JS文件
+app.get('/script.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.sendFile(path.join(__dirname, 'script.js'));
+});
 
 // 添加根路径路由
 app.get('/', (req, res) => {
