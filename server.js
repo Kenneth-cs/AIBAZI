@@ -15,6 +15,16 @@ app.use(express.json());
 // 提供静态文件
 app.use(express.static(__dirname));
 
+// 添加根路径路由
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// 添加主页路由
+app.get('/index.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // 添加代理路由来调用coze API
 app.post('/api/coze-workflow', async (req, res) => {
     try {
