@@ -7,6 +7,54 @@
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- 添加Markdown渲染支持 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+    <!-- 添加Mermaid图表支持 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <!-- 添加表格样式支持 -->
+    <style>
+        .markdown-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 15px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .markdown-content th,
+        .markdown-content td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .markdown-content th {
+            background-color: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        .markdown-content tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .markdown-content pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        .markdown-content code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        .mermaid {
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -140,7 +188,7 @@
                     <div class="loading-spinner">
                         <i class="fas fa-yin-yang fa-spin"></i>
                     </div>
-                    <h3>AI正在分析您的命理信息...</h3>
+                    <h3>正在分析您的命理信息，预计等待5-10分钟...</h3>
                     <p>请稍候，我们正在运用古老智慧与现代技术为您解读命运</p>
                     <div class="progress-bar">
                         <div class="progress-fill" id="progressFill"></div>
@@ -166,10 +214,10 @@
 
         <!-- 页脚 -->
         <footer class="footer">
-            <p>&copy; 2024 AI八字算命. 仅供娱乐参考，不构成人生决策建议.</p>
+            <p>&copy; 2025 AI八字算命. 仅供娱乐参考，不构成人生决策建议.</p>
         </footer>
     </div>
 
     <script src="script.js"></script>
 </body>
-</html> 
+</html>

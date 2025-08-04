@@ -1,12 +1,18 @@
-// 配置选项 - 请根据您的coze工作流配置进行修改
+// 配置选项 - coze工作流配置
 const CONFIG = {
-    // coze工作流API配置
-    COZE_API_URL: 'YOUR_COZE_WORKFLOW_API_ENDPOINT', // 请替换为您的coze工作流API端点
-    COZE_API_KEY: 'YOUR_COZE_API_KEY', // 请替换为您的API密钥
+    // 使用本地代理服务器避免CORS问题
+    USE_PROXY: true,
+    PROXY_URL: '/api/coze-workflow',
     
-    // 其他配置
-    LOADING_DURATION: 3000, // 最小加载时间(毫秒)
-    PROGRESS_ANIMATION_SPEED: 50 // 进度条动画速度
+    // coze工作流API配置
+    COZE_API_URL: 'https://api.coze.cn/v1/workflow/run',
+    COZE_API_KEY: 'pat_hfwkehfncaf****', // 替换为您的实际API密钥
+    WORKFLOW_ID: '73664689170551*****', // 替换为您的实际工作流ID
+    
+    // 其他配置 - 延长加载时间以匹配API超时
+    LOADING_DURATION: 10000, // 10秒最小加载时间
+    PROGRESS_ANIMATION_SPEED: 50,
+    API_TIMEOUT: 600000 // 10分钟API超时时间
 };
 
 // DOM元素引用
@@ -177,32 +183,72 @@ function addFormValidation() {
 
 // 调用coze工作流
 async function callCozeWorkflow(data) {
-    // 检查API配置
-    if (CONFIG.COZE_API_URL === 'YOUR_COZE_WORKFLOW_API_ENDPOINT') {
-        // 如果未配置真实API，返回模拟数据
-        return await getMockResult(data);
-    }
-    
     try {
-        const response = await fetch(CONFIG.COZE_API_URL, {
+        // 构建请求体，直接发送用户数据给代理服务器
+        const requestBody = {
+            name: data.name,
+            gender: data.gender,
+            birth_place: data.birth_place,
+            birth_datetime: data.birth_datetime,
+            year: data.year,
+            month: data.month,
+            day: data.day,
+            hour: data.hour,
+            minute: data.minute,
+            second: data.second
+        };
+        
+        console.log('=== 开始调用coze工作流 ===');
+        console.log('请求数据:', requestBody);
+        
+        const response = await fetch(CONFIG.PROXY_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${CONFIG.COZE_API_KEY}`,
+                'Accept': 'application/json'
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(requestBody)
         });
         
+        console.log('响应状态:', response.status);
+        
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('API响应错误:', errorText);
             throw new Error(`API调用失败: ${response.status} ${response.statusText}`);
         }
         
         const result = await response.json();
-        return result;
+        console.log('coze工作流响应:', result);
+        
+        // 处理成功响应
+        if (result.success) {
+            return {
+                success: true,
+                data: {
+                    name: data.name,
+                    basic_info: {
+                        birth_date: data.birth_datetime,
+                        birth_place: data.birth_place,
+                        gender: data.gender
+                    },
+                    // 直接传递工作流的输出参数
+                    outputs: result.data
+                }
+            };
+        } else {
+            throw new Error(result.message || '工作流执行失败');
+        }
         
     } catch (error) {
-        console.error('coze工作流调用失败:', error);
-        throw error;
+        console.error('=== coze工作流调用失败 ===');
+        console.error('错误信息:', error.message);
+        
+        // 返回错误结果，不使用备用数据
+        return {
+            success: false,
+            message: error.message || '网络请求失败，请检查网络连接后重试'
+        };
     }
 }
 
@@ -233,7 +279,7 @@ async function getMockResult(data) {
                     water: 2
                 }
             },
-            fortune_summary: `${data.name}您好，根据您的八字分析：\n\n您出生于${data.birth_datetime}，${data.birth_place}。\n\n八字为：庚子年 戊寅月 甲午日 丙寅时\n\n五行分析：木旺火相，性格开朗积极，具有很强的创造力和领导能力。您天生聪慧，善于思考，在事业上容易取得成功。\n\n财运方面：中年后财运亨通，投资理财方面有很好的天赋，但需要注意不要过于冒险。\n\n感情方面：感情丰富，桃花运较好，但要注意选择合适的伴侣，婚姻生活会很幸福。\n\n健康方面：整体健康状况良好，但需要注意肝胆方面的保养，多运动，保持良好作息。\n\n事业发展：适合从事创意、管理、教育等行业，贵人运较好，容易得到他人帮助。`,
+            fortune_summary: `${data.name}您好，根据您的八字分析：\n\n您出生于${data.birth_datetime}，${data.birth_place}。\n\n八字为：庚子年 戊寅月 甲午日 丙寅时\n\n五行分析：木旺火相，性格开朗积极，具有很强的创造力和领导能力。您天生聪慧，善于思考，在事业上容易取得成功。\n\n财运方面：中年后财运亨通，投资理财方面有很好的天赋，但需要注意不要过于冒险。\n\n感情方面：感情丰富，桃花运较好，但要注意选择合适的伴侣，婚姻生活会是幸福。\n\n健康方面：整体健康状况良好，但需要注意肝胆方面的保养，多运动，保持良好作息。\n\n事业发展：适合从事创意、管理、教育等行业，贵人运较好，容易得到他人帮助。`,
             recommendations: [
                 "保持积极乐观的心态，发挥自己的创造天赋",
                 "在投资理财时要谨慎，不要盲目跟风",
@@ -303,212 +349,280 @@ function displayResultContent(result) {
     }
     
     const data = result.data;
+    console.log('前端接收到的数据:', data);
+    
+    // 处理分析内容
+    let analysisContent = '';
+    
+    // 优先检查 outputs.fortune_content（新的数据格式）
+    if (data.outputs && data.outputs.fortune_content) {
+        console.log('使用 outputs.fortune_content:', data.outputs.fortune_content.substring(0, 200));
+        
+        let contentData = data.outputs.fortune_content;
+        
+        // 如果是JSON字符串，先解析
+        if (typeof contentData === 'string' && contentData.trim().startsWith('{')) {
+            try {
+                contentData = JSON.parse(contentData);
+                console.log('解析后的 fortune_content:', contentData);
+            } catch (e) {
+                console.log('fortune_content 不是有效的JSON，直接使用字符串');
+            }
+        }
+        
+        // 如果解析后是对象，处理其中的内容
+        if (typeof contentData === 'object' && contentData !== null) {
+            const contentSections = [
+                { key: 'life', title: '🌟 命理基础分析', content: contentData.life },
+                { key: 'dayun', title: '📅 大运流年', content: contentData.dayun },
+                { key: 'five_dayun', title: '📊 近五年流年', content: contentData.five_dayun },
+                { key: 'geju', title: '🎯 格局特点', content: contentData.geju },
+                { key: 'output', title: '📝 综合分析', content: contentData.output }
+            ];
+            
+            const validSections = contentSections.filter(section => 
+                section.content && section.content.toString().trim()
+            );
+            
+            if (validSections.length > 0) {
+                // 初始化Mermaid
+                if (typeof mermaid !== 'undefined') {
+                    mermaid.initialize({ startOnLoad: false, theme: 'default' });
+                }
+                
+                analysisContent = validSections.map(section => {
+                    let content = section.content.toString();
+                    
+                    // 使用marked渲染Markdown内容
+                    if (typeof marked !== 'undefined') {
+                        marked.setOptions({
+                            breaks: true,
+                            gfm: true,
+                            tables: true
+                        });
+                        content = marked.parse(content);
+                    } else {
+                        content = content
+                            .replace(/\\n/g, '<br>')
+                            .replace(/\n/g, '<br>')
+                            .replace(/\\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')
+                            .replace(/\\r/g, '');
+                    }
+                    
+                    return `<div class="analysis-section">
+                        <h5>${section.title}</h5>
+                        <div class="section-content markdown-content">${content}</div>
+                    </div>`;
+                }).join('');
+                
+                // 处理Mermaid图表
+                setTimeout(() => {
+                    if (typeof mermaid !== 'undefined') {
+                        mermaid.run();
+                    }
+                }, 100);
+            }
+        } else {
+            // 如果是字符串，直接处理
+            if (typeof mermaid !== 'undefined') {
+                mermaid.initialize({ startOnLoad: false, theme: 'default' });
+            }
+            
+            if (typeof marked !== 'undefined') {
+                marked.setOptions({
+                    breaks: true,
+                    gfm: true,
+                    tables: true
+                });
+                analysisContent = marked.parse(contentData);
+            } else {
+                analysisContent = contentData
+                    .replace(/\\n/g, '<br>')
+                    .replace(/\n/g, '<br>')
+                    .replace(/\\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')
+                    .replace(/\\r/g, '');
+            }
+            
+            setTimeout(() => {
+                if (typeof mermaid !== 'undefined') {
+                    mermaid.run();
+                }
+            }, 100);
+        }
+    }
+    // 检查旧的数据格式 (fortune_content)
+    else if (data.fortune_content) {
+        console.log('使用 fortune_content:', data.fortune_content.substring(0, 200));
+        
+        let contentData = data.fortune_content;
+        
+        // 初始化Mermaid
+        if (typeof mermaid !== 'undefined') {
+            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+        }
+        
+        // 使用marked渲染Markdown内容
+        if (typeof marked !== 'undefined') {
+            marked.setOptions({
+                breaks: true,
+                gfm: true,
+                tables: true
+            });
+            
+            analysisContent = marked.parse(contentData);
+            
+            setTimeout(() => {
+                if (typeof mermaid !== 'undefined') {
+                    mermaid.run();
+                }
+            }, 100);
+        } else {
+            analysisContent = contentData
+                .replace(/\\n/g, '<br>')
+                .replace(/\n/g, '<br>')
+                .replace(/\\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')
+                .replace(/\\r/g, '');
+        }
+    }
+    // 处理直接字段格式
+    else if (data.dayun || data.five_dayun || data.geju || data.output || data.life || data.wuxinggeju || data.shishen || data.old_dayun || data.now_dayun || data.now_dayun1) {
+        const contentSections = [
+            { key: 'life', title: '🌟 命理基础', content: data.life },
+            { key: 'wuxinggeju', title: '⚡ 五行格局', content: data.wuxinggeju },
+            { key: 'shishen', title: '🎭 十神分析', content: data.shishen },
+            { key: 'geju', title: '🎯 格局特点', content: data.geju },
+            { key: 'old_dayun', title: '📜 过往大运', content: data.old_dayun },
+            { key: 'now_dayun', title: '🔄 当前大运', content: data.now_dayun },
+            { key: 'dayun', title: '📅 大运流年', content: data.dayun },
+            { key: 'five_dayun', title: '📊 近五年流年', content: data.five_dayun },
+            { key: 'now_dayun1', title: '🎯 现运详析', content: data.now_dayun1 },
+            { key: 'output', title: '📝 综合分析', content: data.output }
+        ];
+        
+        const validSections = contentSections.filter(section => 
+            section.content && section.content.toString().trim()
+        );
+        
+        if (validSections.length > 0) {
+            analysisContent = validSections.map(section => {
+                let content = section.content.toString();
+                
+                // 如果内容包含Markdown格式，使用marked渲染
+                if (typeof marked !== 'undefined' && (content.includes('|') || content.includes('#') || content.includes('```'))) {
+                    content = marked.parse(content);
+                } else {
+                    content = content.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+                }
+                
+                return `<div class="analysis-section">
+                    <h5>${section.title}</h5>
+                    <div class="section-content markdown-content">${content}</div>
+                </div>`;
+            }).join('');
+            
+            // 处理Mermaid图表
+            setTimeout(() => {
+                if (typeof mermaid !== 'undefined') {
+                    mermaid.run();
+                }
+            }, 100);
+        } else {
+            analysisContent = '<p>AI正在分析您的命理信息，请稍后...</p>';
+        }
+    }
+    // 兼容旧的数据格式 (outputs)
+    else if (data.outputs) {
+        const outputData = data.outputs;
+        
+        const contentSections = [
+            { key: 'dayun', title: '📅 大运流年', content: outputData.dayun },
+            { key: 'five_dayun', title: '📊 近五年流年', content: outputData.five_dayun },
+            { key: 'geju', title: '🎯 格局特点', content: outputData.geju },
+            { key: 'output', title: '📝 综合分析', content: outputData.output }
+        ];
+        
+        const validSections = contentSections.filter(section => 
+            section.content && section.content.toString().trim()
+        );
+        
+        if (validSections.length > 0) {
+            analysisContent = validSections.map(section => {
+                let content = section.content.toString();
+                
+                // 如果内容包含Markdown格式，使用marked渲染
+                if (typeof marked !== 'undefined' && (content.includes('|') || content.includes('#') || content.includes('```'))) {
+                    content = marked.parse(content);
+                } else {
+                    content = content.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+                }
+                
+                return `<div class="analysis-section">
+                    <h5>${section.title}</h5>
+                    <div class="section-content markdown-content">${content}</div>
+                </div>`;
+            }).join('');
+            
+            // 处理Mermaid图表
+            setTimeout(() => {
+                if (typeof mermaid !== 'undefined') {
+                    mermaid.run();
+                }
+            }, 100);
+        } else {
+            analysisContent = '<p>AI正在分析您的命理信息，请稍后...</p>';
+        }
+    } else {
+        console.log('没有找到支持的数据格式');
+        analysisContent = `
+            <p>调试信息：</p>
+            <pre style="background: #f5f5f5; padding: 10px; border-radius: 5px; font-size: 12px; overflow-x: auto;">
+                ${JSON.stringify(data, null, 2)}
+            </pre>
+        `;
+    }
+    
+    // 如果分析内容为空，显示调试信息
+    if (!analysisContent || analysisContent.trim() === '') {
+        analysisContent = `
+            <p>调试信息：</p>
+            <pre style="background: #f5f5f5; padding: 10px; border-radius: 5px; font-size: 12px; overflow-x: auto;">
+                ${JSON.stringify(data, null, 2)}
+            </pre>
+        `;
+    }
+    
+    // 获取表单数据作为基本信息的备选
+    const formData = getFormData();
+    // 安全地获取基本信息
+    const basicInfo = {
+        name: data.name || formData.name || '测试者',
+        birth_date: (data.basic_info && data.basic_info.birth_date) || 
+                   `${formData.year}-${String(formData.month).padStart(2, '0')}-${String(formData.day).padStart(2, '0')} ${String(formData.hour).padStart(2, '0')}:${String(formData.minute).padStart(2, '0')}:00`,
+        birth_place: (data.basic_info && data.basic_info.birth_place) || formData.location || '北京',
+        gender: (data.basic_info && data.basic_info.gender) || (formData.gender === 'male' ? '男' : '女')
+    };
     
     elements.resultContent.innerHTML = `
         <div class="result-header">
-            <h3>🎋 ${data.name} 的八字命理分析报告</h3>
+            <h3>🎋 ${basicInfo.name} 的八字命理分析报告</h3>
             <div class="basic-info">
-                <p><strong>出生时间：</strong>${data.basic_info.birth_date}</p>
-                <p><strong>出生地点：</strong>${data.basic_info.birth_place}</p>
-                <p><strong>性别：</strong>${data.basic_info.gender}</p>
-            </div>
-        </div>
-        
-        <div class="bazi-info highlight">
-            <h4>📜 八字排盘</h4>
-            <div class="bazi-pillars">
-                <span class="pillar">年柱：${data.bazi_analysis.year_pillar}</span>
-                <span class="pillar">月柱：${data.bazi_analysis.month_pillar}</span>
-                <span class="pillar">日柱：${data.bazi_analysis.day_pillar}</span>
-                <span class="pillar">时柱：${data.bazi_analysis.hour_pillar}</span>
-            </div>
-        </div>
-        
-        <div class="five-elements highlight">
-            <h4>🌟 五行分析</h4>
-            <div class="elements-grid">
-                <div class="element">木：${data.bazi_analysis.five_elements.wood}</div>
-                <div class="element">火：${data.bazi_analysis.five_elements.fire}</div>
-                <div class="element">土：${data.bazi_analysis.five_elements.earth}</div>
-                <div class="element">金：${data.bazi_analysis.five_elements.metal}</div>
-                <div class="element">水：${data.bazi_analysis.five_elements.water}</div>
+                <p><strong>出生时间：</strong>${basicInfo.birth_date}</p>
+                <p><strong>出生地点：</strong>${basicInfo.birth_place}</p>
+                <p><strong>性别：</strong>${basicInfo.gender}</p>
             </div>
         </div>
         
         <div class="fortune-summary">
-            <h4>🔮 命理综述</h4>
-            <div class="summary-text">${data.fortune_summary.replace(/\n/g, '<br>')}</div>
+            <h4>🔮 AI命理分析</h4>
+            <div class="summary-text markdown-content">
+                ${analysisContent}
+            </div>
         </div>
         
-        <div class="recommendations highlight">
-            <h4>💡 人生建议</h4>
-            <ul>
-                ${data.recommendations.map(rec => `<li>${rec}</li>`).join('')}
-            </ul>
-        </div>
+        ${data.debug_url ? `<div style="margin-top: 20px; text-align: center;"><a href="${data.debug_url}" target="_blank" style="color: #667eea;">查看调试信息</a></div>` : ''}
         
         <div class="disclaimer">
-            <p><small>* 此报告仅供娱乐参考，不构成人生重大决策的依据。命运掌握在自己手中，努力奋斗才是成功的关键。</small></p>
+            <p><small>© 2025 AI八字算命，仅供娱乐参考，不构成人生重大决策依据。</small></p>
         </div>
     `;
 }
-
-// 显示错误信息
-function showError(message) {
-    elements.loadingSection.style.display = 'none';
-    elements.resultSection.style.display = 'block';
-    
-    elements.resultContent.innerHTML = `
-        <div class="error-message">
-            <h3>😔 出现错误</h3>
-            <p>${message}</p>
-            <button onclick="handleNewReading()" class="submit-btn" style="margin-top: 20px;">
-                <i class="fas fa-redo"></i>
-                重新尝试
-            </button>
-        </div>
-    `;
-    
-    elements.resultSection.scrollIntoView({ behavior: 'smooth' });
-}
-
-// 处理重新算命
-function handleNewReading() {
-    elements.resultSection.style.display = 'none';
-    elements.loadingSection.style.display = 'none';
-    elements.inputSection.style.display = 'block';
-    
-    // 重置进度条
-    elements.progressFill.style.width = '0%';
-    
-    // 滚动到表单
-    elements.inputSection.scrollIntoView({ behavior: 'smooth' });
-    
-    // 重置状态
-    isProcessing = false;
-    elements.submitBtn.disabled = false;
-}
-
-// 工具函数：睡眠
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-// 添加一些CSS样式到结果内容
-const additionalStyles = `
-<style>
-.result-header {
-    text-align: center;
-    margin-bottom: 30px;
-}
-
-.basic-info {
-    background: rgba(102, 126, 234, 0.1);
-    padding: 15px;
-    border-radius: 10px;
-    margin-top: 15px;
-}
-
-.basic-info p {
-    margin: 5px 0;
-}
-
-.bazi-pillars {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.pillar {
-    background: #667eea;
-    color: white;
-    padding: 10px;
-    text-align: center;
-    border-radius: 8px;
-    font-weight: 600;
-}
-
-.elements-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.element {
-    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-    color: #333;
-    padding: 10px;
-    text-align: center;
-    border-radius: 8px;
-    font-weight: 600;
-}
-
-.summary-text {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    line-height: 1.8;
-    margin-top: 10px;
-}
-
-.recommendations ul {
-    list-style: none;
-    padding: 0;
-}
-
-.recommendations li {
-    background: white;
-    padding: 12px 15px;
-    margin: 8px 0;
-    border-radius: 8px;
-    border-left: 4px solid #28a745;
-    position: relative;
-}
-
-.recommendations li:before {
-    content: "✨";
-    margin-right: 8px;
-}
-
-.disclaimer {
-    text-align: center;
-    margin-top: 30px;
-    padding: 15px;
-    background: rgba(255, 193, 7, 0.1);
-    border-radius: 10px;
-    border: 1px solid #ffc107;
-}
-
-.error-message {
-    text-align: center;
-    padding: 40px;
-    color: #dc3545;
-}
-
-.error-message h3 {
-    color: #dc3545;
-    margin-bottom: 15px;
-}
-
-@media (max-width: 768px) {
-    .bazi-pillars {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .elements-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
-@media (max-width: 480px) {
-    .elements-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-</style>
-`;
-
-// 将额外样式添加到页面
-document.head.insertAdjacentHTML('beforeend', additionalStyles); 
