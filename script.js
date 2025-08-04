@@ -1,18 +1,19 @@
 // 配置选项 - coze工作流配置
+// 修改CONFIG配置（第2-16行）
 const CONFIG = {
-    // 使用本地代理服务器避免CORS问题
+    // 使用Vercel API路由作为代理
     USE_PROXY: true,
     PROXY_URL: '/api/coze-workflow',
     
-    // coze工作流API配置
+    // coze工作流API配置（现在会使用环境变量）
     COZE_API_URL: 'https://api.coze.cn/v1/workflow/run',
-    COZE_API_KEY: 'pat_hfwkehfncaf****', // 替换为您的实际API密钥
-    WORKFLOW_ID: '73664689170551*****', // 替换为您的实际工作流ID
+    COZE_API_KEY: '', // 留空，使用Vercel环境变量
+    WORKFLOW_ID: '7527326304544161826', // 你的实际工作流ID
     
-    // 其他配置 - 延长加载时间以匹配API超时
-    LOADING_DURATION: 10000, // 10秒最小加载时间
+    // 其他配置
+    LOADING_DURATION: 10000,
     PROGRESS_ANIMATION_SPEED: 50,
-    API_TIMEOUT: 600000 // 10分钟API超时时间
+    API_TIMEOUT: 600000
 };
 
 // DOM元素引用
@@ -625,4 +626,32 @@ function displayResultContent(result) {
             <p><small>© 2025 AI八字算命，仅供娱乐参考，不构成人生重大决策依据。</small></p>
         </div>
     `;
+}
+
+// 处理重新算命
+function handleNewReading() {
+    isProcessing = false;
+    elements.submitBtn.disabled = false;
+    elements.resultSection.style.display = 'none';
+    elements.loadingSection.style.display = 'none';
+    elements.inputSection.style.display = 'block';
+    elements.inputSection.scrollIntoView({ behavior: 'smooth' });
+    console.log('重新开始算命');
+}
+
+// 显示错误信息
+function showError(message) {
+    elements.loadingSection.style.display = 'none';
+    elements.resultSection.style.display = 'block';
+    elements.resultContent.innerHTML = `
+        <div class="error-message" style="text-align: center; padding: 40px; color: #e74c3c;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 20px;"></i>
+            <h3>😔 算命失败</h3>
+            <p>${message}</p>
+            <button onclick="handleNewReading()" style="margin-top: 20px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                重新尝试
+            </button>
+        </div>
+    `;
+    elements.resultSection.scrollIntoView({ behavior: 'smooth' });
 }
